@@ -3,27 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D সৌরজগৎ (CDN)</title>
+    <title>3D সৌরজগৎ</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #050505; }
         canvas { display: block; }
     </style>
+    <!-- গ্লোবাল এবং সবচেয়ে নির্ভরযোগ্য CDN লিংক -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-<!-- ইম্পোর্ট ম্যাপ ব্যবহার করে অফিসিয়াল cdnjs এবং unpkg CDN সেট করা হচ্ছে -->
-<script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com"
-    }
-  }
-</script>
-
-<script type="module">
-    // CDN থেকে সরাসরি Three.js মডিউল ইম্পোর্ট করা হচ্ছে
-    import * as THREE from 'three';
-
+<script>
     // ১. সিন, ক্যামেরা ও রেন্ডারার তৈরি
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
