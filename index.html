@@ -3,79 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D সৌরজগৎ</title>
+    <title>3D Real Solar System</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050505; }
+        body { margin: 0; overflow: hidden; background-color: #020202; }
         canvas { display: block; }
     </style>
-    <!-- গিটহাবের জন্য শতভাগ নিরাপদ ও অনুমোদিত cdnjs লিংক -->
-    <script src="https://cloudflare.com"></script>
+    <!-- গিটহাবের সিকিউরিটি (CORS) ব্লকিং এড়ানোর জন্য সঠিক স্ক্রিপ্ট লিংক -->
+    <script src="https://cloudflare.com" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
 <script>
-    // ১. সিন, ক্যামেরা ও রেন্ডারার তৈরি
+    // ১. ৩D সিন, ক্যামেরা ও রেন্ডারার সেটআপ
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // ২. আলো যোগ করা
-    const ambientLight = new THREE.AmbientLight(0x555555);
+    // ২. স্পেস লাইটিং (বাস্তবসম্মত ছায়ার জন্য)
+    const ambientLight = new THREE.AmbientLight(0x333333);
     scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 2, 300);
-    scene.add(pointLight);
+    
+    // সূর্য থেকে আলো চারদিকে ছড়াবে (PointLight)
+    const sunLight = new THREE.PointLight(0xffffff, 2, 300);
+    scene.add(sunLight);
 
-    // ৩. সূর্য তৈরি
+    // ৩. ৩D গ্লোয়িং সূর্য (Sun) তৈরি
     const sunGeometry = new THREE.SphereGeometry(4, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
 
-    // ৪. গ্রহের ডেটা (আকার, রঙ, দূরত্ব, গতি)
-    const planetData = [
-        { radius: 0.6, color: 0xaaaaaa, distance: 8,  speed: 0.03 },  // বুধ
-        { radius: 1.0, color: 0xe3bb76, distance: 12, speed: 0.02 },  // শুক্র
-        { radius: 1.2, color: 0x2233ff, distance: 16, speed: 0.015 }, // পৃথিবী
-        { radius: 0.8, color: 0xff3300, distance: 21, speed: 0.01 }   // মঙ্গল
-    ];
-
-    const planets = [];
-
-    // ৫. লুপের মাধ্যমে গ্রহ তৈরি
-    planetData.forEach(data => {
-        const geometry = new THREE.SphereGeometry(data.radius, 32, 32);
-        const material = new THREE.MeshStandardMaterial({ color: data.color });
+    // ৪. ৩D গ্রহ তৈরির নিখুঁত ফাংশн
+    function create3DPlanet(radius, color, distance) {
+        const geometry = new THREE.SphereGeometry(radius, 32, 32);
+        // MeshStandardMaterial ব্যবহারের ফলে আলোর প্রতিফলনে বাস্তবসম্মত ৩D শ্যাডো তৈরি হবে
+        const material = new THREE.MeshStandardMaterial({ 
+            color: color, 
+            roughness: 0.6,
+            metalness: 0.1
+        });
         const mesh = new THREE.Mesh(geometry, material);
         
-        const orbit = new THREE.Object3D();
-        scene.add(orbit);
-        
-        mesh.position.x = data.distance;
-        orbit.add(mesh);
-        
-        planets.push({ mesh: mesh, orbit: orbit, speed: data.speed });
-    });
+        // গ্রহের কক্ষপথের লাইন (Orbit ring) ৩D-তে দেখানো
+        const ringGeometry = new THREE.RingGeometry(distance - 0.1, distance + 0.1, 64);
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide });
+        const orbitRing = new THREE.Mesh(ringGeometry, ringMaterial);
+        orbitRing.rotation.x = Math.PI / 2;
+        scene.add(orbitRing);
 
-    camera.position.z = 35;
-    camera.position.y = 15;
+        // ঘূর্ণনের জন্য অভিভাবক অবজেক্ট
+        const orbitGroup = new THREE.Object3D();
+        scene.add(orbitGroup);
+        
+        mesh.position.x = distance;
+        orbitGroup.add(mesh);
+        
+        return { mesh, orbitGroup };
+    }
+
+    // ৫. সৌরজগতের গ্রহসমূহ যোগ করা
+    const planets = [
+        create3DPlanet(0.5, 0x888888, 8),  // বুধ (Mercury)
+        create3DPlanet(0.9, 0xe3bb76, 12), // শুক্র (Venus)
+        create3DPlanet(1.2, 0x2277ff, 17), // পৃথিবী (Earth)
+        create3DPlanet(0.8, 0xcc3300, 22)  // মঙ্গল (Mars)
+    ];
+
+    // ক্যামেরার অ্যাঙ্গেল একটু উপর থেকে সেট করা যাতে পুরো ৩D ভিউটি সুন্দর দেখায়
+    camera.position.z = 38;
+    camera.position.y = 20;
     camera.lookAt(scene.position);
 
-    // ৬. অ্যানিমেশন লুপ
+    // ৬. রিয়েল-টাইম ৩D অ্যানিমেশন লুপ
     function animate() {
         requestAnimationFrame(animate);
 
+        // সূর্যের নিজের অক্ষের ঘূর্ণন
         sun.rotation.y += 0.002;
 
-        planets.forEach(p => {
-            p.orbit.rotation.y += p.speed;
-            p.mesh.rotation.y += 0.02;
-        });
+        // গ্রহগুলোর বাস্তবসম্মত কক্ষপথের ঘূর্ণন গতি (Real 3D Orbiting)
+        planets[0].orbitGroup.rotation.y += 0.025; // বুধ
+        planets[1].orbitGroup.rotation.y += 0.018; // শুক্র
+        planets[2].orbitGroup.rotation.y += 0.012; // পৃথিবী
+        planets[3].orbitGroup.rotation.y += 0.008; // মঙ্গল
+
+        // গ্রহগুলোর নিজের অক্ষের ওপর ঘূর্ণন
+        planets.forEach(p => p.mesh.rotation.y += 0.015);
 
         renderer.render(scene, camera);
     }
 
+    // স্ক্রিন সাইজ পরিবর্তন হলে অ্যাডজাস্ট করার কোড
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
